@@ -34,6 +34,11 @@
           "backgroundColor": "#ffffff"
         }
       ]
+    // Optional: As per the article, though metro.config.js should handle this
+    // "packagerOpts": {
+    //   "config": "metro.config.js",
+    //  "sourceExts": ["js", "jsx", "json", "ts", "tsx", "css", "scss", "sass"]
+    // }
     ],
     "experiments": {
       "typedRoutes": true
