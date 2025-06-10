@@ -51,10 +51,10 @@ export default function HomeScreen() {
       <ThemedView style={styles.sectionContainer}>
         <ThemedText type="subtitle">Inventory Overview</ThemedText>
         <ThemedText>
-          - Total Items: 1500
+          - Total Items: 
         </ThemedText>
         <ThemedText>
-          - Low Stock Alerts: 5 items
+          - Low Stock Alerts:
         </ThemedText>
       </ThemedView>
     </ParallaxScrollView>

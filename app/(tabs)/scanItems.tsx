@@ -1,110 +1,137 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors'; // Added for button styling
+import { useColorScheme } from '@/hooks/useColorScheme'; // Added for button styling
 
-export default function TabTwoScreen() {
+export default function ScanItemsScreen() {
+  const colorScheme = useColorScheme();
+
+  // Placeholder function for scan action
+  const handleScanPress = () => {
+    console.log('Scan button pressed');
+    // In a real app, you would initiate camera scanning here
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
       headerImage={
         <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
+          size={280} // Adjusted size
+          color={colorScheme === 'light' ? Colors.light.icon : Colors.dark.icon}
+          name="qrcode.viewfinder" // Changed to a scanning-related icon
           style={styles.headerImage}
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
+        <ThemedText type="title">Scan Item</ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
+
+      <ThemedView style={styles.contentContainer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.scanButton,
+            { backgroundColor: Colors[colorScheme ?? 'light'].tint },
+            pressed && styles.scanButtonPressed,
+          ]}
+          onPress={handleScanPress}>
+          <IconSymbol name="camera.fill" size={24} color="#FFFFFF" style={styles.scanButtonIcon} />
+          <ThemedText style={styles.scanButtonText}>Tap to Scan Item</ThemedText>
+        </Pressable>
+
+        {/* Placeholder for camera view or instructions */}
+        <ThemedView style={styles.cameraPlaceholder}>
+          <IconSymbol name="viewfinder" size={80} color={Colors[colorScheme ?? 'light'].text} style={{ opacity: 0.3 }} />
+          <ThemedText type='default' style={{ textAlign: 'center', marginTop: 8, opacity: 0.6 }}>
+            camera view here
+          </ThemedText>            
+        </ThemedView>
+
+        <ThemedView style={styles.detailsContainer}>
+          <ThemedText type="subtitle">Last Scanned Item</ThemedText>
+          <View style={styles.detailItem}>
+            <ThemedText type="defaultSemiBold">Name:</ThemedText>
+            <ThemedText>---</ThemedText>
+          </View>
+          <View style={styles.detailItem}>
+            <ThemedText type="defaultSemiBold">ID:</ThemedText>
+            <ThemedText>---</ThemedText>
+          </View>
+          <View style={styles.detailItem}>
+            <ThemedText type="defaultSemiBold">Quantity:</ThemedText>
+            <ThemedText>---</ThemedText>
+          </View>
+        </ThemedView>
+      </ThemedView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
+    // Adjusted to better center a typical icon
+    bottom: -60, // Adjust as needed
+    left: '50%',
+    marginLeft: -140, // Half of the icon size (280 / 2)
     position: 'absolute',
   },
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+    paddingHorizontal: 16, // Added padding
+    marginTop: 16,      // Added margin
   },
+  contentContainer: {
+    padding: 16,
+    gap: 24, // Increased gap for better separation
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    elevation: 2, // For Android shadow
+    shadowColor: '#000', // For iOS shadow
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.41,
+  },
+  scanButtonPressed: {
+    opacity: 0.8,
+  },
+  scanButtonIcon: {
+    marginRight: 12,
+  },
+  scanButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  cameraPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    borderWidth: 2,
+    borderColor: Colors.light.gray, // Use a subtle border color
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  detailsContainer: {
+    gap: 12,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.light.cardBackground, // Example: use a card background
+    // Add shadow or border if desired
+  },
+  detailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  }
 });
