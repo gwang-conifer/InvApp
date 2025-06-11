@@ -33,11 +33,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
+      {/* Define the Scan Items tab */}
       <Tabs.Screen
-        name="explore"
+        name="scanItems" // This matches the filename scanItems.tsx
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Scan Items', // The title displayed in the tab bar
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="barcode.viewfinder" color={color} />, // Icon for the tab
+        }}
+      />
+      {/* Define the All Orders tab */}
+      <Tabs.Screen
+        name="allOrders" // This matches the filename allOrders.tsx
+        options={{
+          title: 'All Orders', // The title displayed in the tab bar
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet.rectangle.portrait.fill" color={color} />, // Icon for the tab
         }}
       />
     </Tabs>

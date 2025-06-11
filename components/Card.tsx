@@ -13,14 +13,14 @@ interface CardProps extends ViewProps {
 
 export default function Card({ title, children, style, ...rest }: CardProps) {
   const colorScheme = useColorScheme();
-  const cardBackgroundColor = colorScheme === 'light' ? Colors.light.background : Colors.dark.background; // Or a specific card background color
+  const cardBackground = colorScheme === 'light' ? Colors.light.background : Colors.dark.background; // Or a specific card background color
   const cardBorderColor = colorScheme === 'light' ? Colors.light.icon : Colors.dark.icon; // Example border
 
   return (
     <ThemedView
       style={[
         styles.card,
-        { backgroundColor: cardBackgroundColor, borderColor: cardBorderColor },
+        { backgroundColor: cardBackground, borderColor: cardBorderColor },
         style,
       ]}
       {...rest}>

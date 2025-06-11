@@ -81,7 +81,6 @@ const styles = StyleSheet.create({
   listContentContainer: {
     padding: 16, // Add padding around the list
     marginBottom: 8,
-    padding: 16,
     borderRadius: 8,
   },
   headerIcon: { // Renamed from reactLogo and adjusted
