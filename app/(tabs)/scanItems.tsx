@@ -6,10 +6,10 @@ import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import React, { useState } from 'react';
-import { Alert, Button, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native'; // Added Platform, PermissionsAndroid
+import { Alert, Button, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 interface ScannedItem {
-  type: string; // react-native-smart-barcode provides 'type'
+  type: string;
   data: string;
 }
 
@@ -17,74 +17,87 @@ export default function ScanItemsScreen() {
   const colorScheme = useColorScheme();
   const [isCameraVisible, setIsCameraVisible] = useState(false);
   const [permission, requestPermission] = useCameraPermissions();
-
   const [scannedItem, setScannedItem] = useState<ScannedItem | null>(null);
-
-  
+  const [hasScanned, setHasScanned] = useState(false); // cooldown flag
 
   const handleToggleCamera = async () => {
-    if (!permission) { // Permissions are still loading
-      return;
-    }
+    if (!permission) return;
 
     if (permission.granted) {
-      setScannedItem(null); // Reset previous scan
-      setIsCameraVisible(prev => !prev);
-    } else { // Permission not granted
-      const { granted: newPermissionGranted, canAskAgain } = await requestPermission();
-      if (newPermissionGranted) {
-        setScannedItem(null); // Reset previous scan
-        setIsCameraVisible(true); // Open camera on first grant
+      setScannedItem(null); // Reset previous scan data
+      setIsCameraVisible(prevIsVisible => {
+        if (!prevIsVisible) { // If camera is about to become visible
+          setHasScanned(false); // Reset for a new scanning session
+        }
+        return !prevIsVisible;
+      });
+    } else {
+      const { granted, canAskAgain } = await requestPermission();
+      if (granted) {
+        setScannedItem(null); // Reset previous scan data
+        setHasScanned(false); // Reset for a new scanning session
+        setIsCameraVisible(true);
       } else if (!canAskAgain) {
         Alert.alert("Permissions required", "Camera permission is needed to scan items. Please enable it in settings.", [
           { text: "OK" },
-          { text: "Open Settings", onPress: () => Linking.openSettings() }
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
         ]);
       }
-      // If !newPermissionGranted && canAskAgain, the system prompt was shown.
-      // The UI for permission denied (below) will handle showing the "Grant Permission" button
-      // or "Open Settings" based on the updated permission status.
     }
   };
+
   
 
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
       headerImage={
-      <View style={styles.headerImage}>
-        <IconSymbol
-          size={280}
-          color={colorScheme === 'light' ? Colors.light.icon : Colors.dark.icon}
-          name="qrcode.viewfinder"
-        />
-      </View>
-
-      }>
+        <View style={styles.headerImage}>
+          <IconSymbol
+            size={280}
+            color={colorScheme === 'light' ? Colors.light.icon : Colors.dark.icon}
+            name="qrcode.viewfinder"
+          />
+        </View>
+      }
+    >
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Scan Item</ThemedText>
       </ThemedView>
 
       {isCameraVisible && permission?.granted ? (
         <View style={styles.cameraContainer}>
-
-        <CameraView
+          <CameraView
             style={styles.barcodeScannerView}
-            onBarcodeScanned={(scanningResult: BarcodeScanningResult) => {
-              if (isCameraVisible && scanningResult.data) {
-                console.log('Barcode SCANNED (expo-camera):', scanningResult.data, 'Type:', scanningResult.type);
-                // Prevent multiple scans if already processing one
-                if (scannedItem?.data !== scanningResult.data || scannedItem?.type !== scanningResult.type) {
-                  setScannedItem({ type: scanningResult.type, data: scanningResult.data });
-                  setIsCameraVisible(false); // Hide camera after successful scan
-              
-                }
-               }
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e'],
             }}
-            // You can configure barcodeTypes if needed:
-            // barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'code128', etc...] }}
+            // Replace the existing onBarcodeScanned with your new debugging version
+            onBarcodeScanned={(result: BarcodeScanningResult) => {
+              console.log("--- BARCODE SCAN EVENT ---", result); // Make log more prominent
+              if (result.data) {
+                Alert.alert(
+                  "Scan Detected!",
+                  `Type: ${result.type}\nData: ${result.data.substring(0, 100)}...`, // Show some data
+                  [{ text: "OK" }]
+                );
+                // For this test, let's not immediately process or close the camera
+                // to see if multiple events fire or if the alert itself shows up.
+                // setHasScanned(true);
+                // setScannedItem({ type: result.type, data: result.data });
+                // setIsCameraVisible(false);
+                // setTimeout(() => setHasScanned(false), 2000);
+              } else {
+                console.log("Scan event fired, but NO DATA in result.");
+                // You could add an Alert here too if you want to see this on the device
+                // Alert.alert("Scan Attempted", "No data found in barcode result.", [{ text: "OK" }]);
+              }
+            }}
+            facing="back" // Good to be explicit, though it's the default
+            autoFocus="on" // Good to be explicit, though it's the default
+            zoom={0.2} // EXPERIMENT: Try a small value like 0.1 or 0.2
           />
-           <Pressable style={styles.closeCameraButton} onPress={() => setIsCameraVisible(false)}>
+          <Pressable style={styles.closeCameraButton} onPress={() => setIsCameraVisible(false)}>
             <IconSymbol name="xmark.circle.fill" size={30} color="white" />
           </Pressable>
         </View>
@@ -96,22 +109,22 @@ export default function ScanItemsScreen() {
               { backgroundColor: Colors[colorScheme ?? 'light'].tint },
               pressed && styles.scanButtonPressed,
             ]}
-            onPress={handleToggleCamera}>
+            onPress={handleToggleCamera}
+          >
             <IconSymbol name="camera.fill" size={24} color="#FFFFFF" style={styles.scanButtonIcon} />
             <ThemedText style={styles.scanButtonText}>
-              {scannedItem ? "Scan Another Item" : "Tap to Scan Item"} 
+              {scannedItem ? "Scan Another Item" : "Tap to Scan Item"}
             </ThemedText>
           </Pressable>
 
-          {/* Show permission request/info if permission is denied */}
           {permission && !permission.granted && (
             <View style={styles.permissionMessageContainer}>
               <ThemedText style={{ textAlign: 'center', marginBottom: 10 }}>
                 Camera permission is required to scan items.
               </ThemedText>
-              {permission.canAskAgain && ( // Only show "Grant Permission" if we can ask again
+              {permission.canAskAgain && (
                 <Button title="Grant Permission" onPress={requestPermission} color={Colors[colorScheme ?? 'light'].tint} />
-              )} 
+              )}
               <Button title="Open Settings" onPress={() => Linking.openSettings()} color={Colors[colorScheme ?? 'light'].tint} />
             </View>
           )}
@@ -119,8 +132,8 @@ export default function ScanItemsScreen() {
           {scannedItem && (
             <ThemedView
               style={styles.detailsContainer}
-              lightColor={Colors.light.cardBackground || '#f9f9f9'} 
-              darkColor={Colors.dark.cardBackground || '#2a2a2a'}  
+              lightColor={Colors.light.cardBackground || '#f9f9f9'}
+              darkColor={Colors.dark.cardBackground || '#2a2a2a'}
             >
               <ThemedText type="subtitle">Last Scanned Item</ThemedText>
               <View style={styles.detailItem}>
@@ -141,62 +154,58 @@ export default function ScanItemsScreen() {
                   value={scannedItem.data}
                   editable={false}
                   multiline
-                  numberOfLines={3} // Adjust as needed
+                  numberOfLines={3}
                 />
               </View>
-              {/* You can add more fields here based on what you do with the scanned data */}
             </ThemedView>
           )}
 
-          {/* Original Placeholder - can be removed or kept if camera is not active */}
           {!isCameraVisible && !scannedItem && (
             <ThemedView style={[
               styles.cameraPlaceholder,
-              { borderColor: Colors[colorScheme ?? 'light'].icon } // Apply theme-aware border color
-            ]}>             
-            <IconSymbol
+              { borderColor: Colors[colorScheme ?? 'light'].icon }
+            ]}>
+              <IconSymbol
                 name="viewfinder"
                 size={80}
-                color={Colors[colorScheme ?? 'light'].text} // Or .icon if preferred
+                color={Colors[colorScheme ?? 'light'].text}
                 style={{ opacity: 0.3 }}
               />
               <ThemedText type='default' style={{ textAlign: 'center', marginTop: 8, opacity: 0.6 }}>
                 Press the button above to start scanning
               </ThemedText>
-              
             </ThemedView>
           )}
         </ThemedView>
       )}
-      </ParallaxScrollView>
+    </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   headerImage: {
-    // Adjusted to better center a typical icon
-    bottom: -60, // Adjust as needed
+    bottom: -60,
     left: '50%',
-    marginLeft: -140, // Half of the icon size (280 / 2)
+    marginLeft: -140,
     position: 'absolute',
   },
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 16, // Added padding
-    marginTop: 16,      // Added margin
+    paddingHorizontal: 16,
+    marginTop: 16,
   },
   cameraContainer: {
-    height: 400, // Adjust as needed
+    height: 400,
     width: '100%',
-    position: 'relative', // For positioning the close button
+    position: 'relative',
   },
-  barcodeScannerView: { // Added style for the Barcode component
+  barcodeScannerView: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
-    gap: 24, // Increased gap for better separation
+    gap: 24,
   },
   scanButton: {
     flexDirection: 'row',
@@ -205,8 +214,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,
-    elevation: 2, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
+    elevation: 2,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 1.41,
@@ -225,8 +234,8 @@ const styles = StyleSheet.create({
   cameraPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40, // Corrected borderColor to be theme-aware
-    borderWidth: 2, // borderColor: Colors.light.icon, // Changed from Colors.light.gray
+    paddingVertical: 40,
+    borderWidth: 2,
     borderStyle: 'dashed',
     borderRadius: 12,
     marginTop: 16,
@@ -236,18 +245,17 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 8,
-    // Add shadow or border if desired
   },
   detailItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  detailItemLabel: { // Added definition for detailItemLabel
+  detailItemLabel: {
     marginRight: 8,
     flexShrink: 0,
   },
-  scannedDataInput: { // Added definition for scannedDataInput
+  scannedDataInput: {
     flex: 1,
     marginLeft: 8,
     paddingVertical: 8,
@@ -265,8 +273,8 @@ const styles = StyleSheet.create({
     top: 20,
     right: 20,
     zIndex: 1,
-    padding: 8, // Make it easier to tap
+    padding: 8,
     backgroundColor: 'rgba(0,0,0,0.4)',
     borderRadius: 20,
-  }
+  },
 });
