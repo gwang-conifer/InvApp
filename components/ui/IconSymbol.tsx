@@ -1,7 +1,7 @@
 // Fallback for using MaterialIcons on Android and web.
-
+// IconSymbol.tsx
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
+import { SymbolViewProps, SymbolWeight } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
@@ -18,6 +18,11 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'qrcode.viewfinder': 'qr-code-scanner',
+  'xmark.circle.fill': 'cancel',
+  'camera.fill': 'photo-camera',
+  'viewfinder': 'center-focus-strong',
+  
 } as IconMapping;
 
 /**
@@ -31,11 +36,17 @@ export function IconSymbol({
   color,
   style,
 }: {
+
   name: IconSymbolName;
   size?: number;
   color: string | OpaqueColorValue;
   style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
+  const mappedName = MAPPING[name];
+  if (!mappedName) {
+    console.warn(`⚠️ IconSymbol: '${name}' not mapped to MaterialIcons.`);
+    return null; // or render a placeholder/fallback icon
+  }
   return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style} />;
 }

@@ -1,13 +1,12 @@
-// import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera'; // Replaced
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import React, { useEffect, useState } from 'react';
-import { Alert, Button, Linking, PermissionsAndroid, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'; // Added Platform, PermissionsAndroid
-import Barcode from 'react-native-smart-barcode'; // Added for react-native-smart-barcode
+import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import React, { useState } from 'react';
+import { Alert, Button, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native'; // Added Platform, PermissionsAndroid
 
 interface ScannedItem {
   type: string; // react-native-smart-barcode provides 'type'
@@ -16,104 +15,76 @@ interface ScannedItem {
 
 export default function ScanItemsScreen() {
   const colorScheme = useColorScheme();
-  // const [permission, requestPermission] = useCameraPermissions(); // Removed expo-camera permission hook
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null); // null: undetermined, true: granted, false: denied
   const [isCameraVisible, setIsCameraVisible] = useState(false);
+  const [permission, requestPermission] = useCameraPermissions();
+
   const [scannedItem, setScannedItem] = useState<ScannedItem | null>(null);
 
-  useEffect(() => {
-    const checkInitialPermission = async () => {
-      if (Platform.OS === 'android') {
-        const result = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CAMERA);
-        setHasCameraPermission(result);
-      } else {
-        // For iOS, permission is typically requested when the camera is first accessed.
-        // Setting to null so the user is prompted on first tap.
-        setHasCameraPermission(null);
-      }
-    };
-    checkInitialPermission();
-  }, []);
-
-  const requestCameraPermissionAction = async (): Promise<boolean> => {
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.CAMERA,
-          {
-            title: "Camera Permission",
-            message: "RecOrd needs access to your camera to scan barcodes.",
-            buttonPositive: "OK",
-            buttonNegative: "Cancel",
-          }
-        );
-        const isGranted = granted === PermissionsAndroid.RESULTS.GRANTED;
-        setHasCameraPermission(isGranted);
-        return isGranted;
-      } catch (err) {
-        console.warn(err);
-        setHasCameraPermission(false);
-        return false;
-      }
-    } else { // iOS
-      // For iOS, the system will prompt when the Barcode component tries to access the camera.
-      // We set permission to true to allow the component to render and trigger the prompt.
-      setHasCameraPermission(true);
-      return true;
-    }
-  };
+  
 
   const handleToggleCamera = async () => {
-    let currentPermissionGranted = hasCameraPermission;
-    if (hasCameraPermission !== true) { // If null (undetermined/initial) or false (denied)
-      currentPermissionGranted = await requestCameraPermissionAction();
+    if (!permission) { // Permissions are still loading
+      return;
     }
 
-    if (currentPermissionGranted) {
+    if (permission.granted) {
       setScannedItem(null); // Reset previous scan
       setIsCameraVisible(prev => !prev);
-    } else if (hasCameraPermission === false) { // Only show alert if explicitly denied and not just undetermined
+    } else { // Permission not granted
+      const { granted: newPermissionGranted, canAskAgain } = await requestPermission();
+      if (newPermissionGranted) {
+        setScannedItem(null); // Reset previous scan
+        setIsCameraVisible(true); // Open camera on first grant
+      } else if (!canAskAgain) {
         Alert.alert("Permissions required", "Camera permission is needed to scan items. Please enable it in settings.", [
           { text: "OK" },
           { text: "Open Settings", onPress: () => Linking.openSettings() }
         ]);
+      }
+      // If !newPermissionGranted && canAskAgain, the system prompt was shown.
+      // The UI for permission denied (below) will handle showing the "Grant Permission" button
+      // or "Open Settings" based on the updated permission status.
     }
   };
+  
 
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
       headerImage={
+      <View style={styles.headerImage}>
         <IconSymbol
-          size={280} // Adjusted size
+          size={280}
           color={colorScheme === 'light' ? Colors.light.icon : Colors.dark.icon}
-          name="qrcode.viewfinder" // Changed to a scanning-related icon
-          style={styles.headerImage}
+          name="qrcode.viewfinder"
         />
+      </View>
+
       }>
       <ThemedView style={styles.titleContainer}>
         <ThemedText type="title">Scan Item</ThemedText>
       </ThemedView>
 
-      {isCameraVisible && hasCameraPermission === true ? (
+      {isCameraVisible && permission?.granted ? (
         <View style={styles.cameraContainer}>
-          <Barcode
-            style={styles.barcodeScannerView} // Use flex: 1 to fill container
-            onBarCodeRead={(event: { data: string; type: string }) => {
-              console.log('Barcode scan attempt (react-native-smart-barcode):', JSON.stringify(event, null, 2));
-              if (isCameraVisible && event.data) {
-                console.log('Barcode SCANNED (react-native-smart-barcode):', event.data, 'Type:', event.type);
+
+        <CameraView
+            style={styles.barcodeScannerView}
+            onBarcodeScanned={(scanningResult: BarcodeScanningResult) => {
+              if (isCameraVisible && scanningResult.data) {
+                console.log('Barcode SCANNED (expo-camera):', scanningResult.data, 'Type:', scanningResult.type);
                 // Prevent multiple scans if already processing one
-                if (scannedItem?.data !== event.data || scannedItem?.type !== event.type) {
-                  setScannedItem({ type: event.type, data: event.data });
+                if (scannedItem?.data !== scanningResult.data || scannedItem?.type !== scanningResult.type) {
+                  setScannedItem({ type: scanningResult.type, data: scanningResult.data });
                   setIsCameraVisible(false); // Hide camera after successful scan
+              
                 }
-              }
+               }
             }}
-            // react-native-smart-barcode does not have a barcodeTypes prop like expo-camera.
-            // It scans for all supported types by default.
+            // You can configure barcodeTypes if needed:
+            // barcodeScannerSettings={{ barcodeTypes: ['qr', 'ean13', 'code128', etc...] }}
           />
-          <Pressable style={styles.closeCameraButton} onPress={() => setIsCameraVisible(false)}>
+           <Pressable style={styles.closeCameraButton} onPress={() => setIsCameraVisible(false)}>
             <IconSymbol name="xmark.circle.fill" size={30} color="white" />
           </Pressable>
         </View>
@@ -128,19 +99,19 @@ export default function ScanItemsScreen() {
             onPress={handleToggleCamera}>
             <IconSymbol name="camera.fill" size={24} color="#FFFFFF" style={styles.scanButtonIcon} />
             <ThemedText style={styles.scanButtonText}>
-              {scannedItem ? "Scan Another Item" : "Tap to Scan Item"}
+              {scannedItem ? "Scan Another Item" : "Tap to Scan Item"} 
             </ThemedText>
           </Pressable>
 
           {/* Show permission request/info if permission is denied */}
-          {hasCameraPermission === false && (
+          {permission && !permission.granted && (
             <View style={styles.permissionMessageContainer}>
               <ThemedText style={{ textAlign: 'center', marginBottom: 10 }}>
                 Camera permission is required to scan items.
               </ThemedText>
-              {Platform.OS === 'android' && ( // On Android, we can prompt again.
-                <Button title="Grant Permission" onPress={requestCameraPermissionAction} color={Colors[colorScheme ?? 'light'].tint} />
-              )}
+              {permission.canAskAgain && ( // Only show "Grant Permission" if we can ask again
+                <Button title="Grant Permission" onPress={requestPermission} color={Colors[colorScheme ?? 'light'].tint} />
+              )} 
               <Button title="Open Settings" onPress={() => Linking.openSettings()} color={Colors[colorScheme ?? 'light'].tint} />
             </View>
           )}
@@ -179,8 +150,11 @@ export default function ScanItemsScreen() {
 
           {/* Original Placeholder - can be removed or kept if camera is not active */}
           {!isCameraVisible && !scannedItem && (
-            <ThemedView style={styles.cameraPlaceholder}>
-              <IconSymbol
+            <ThemedView style={[
+              styles.cameraPlaceholder,
+              { borderColor: Colors[colorScheme ?? 'light'].icon } // Apply theme-aware border color
+            ]}>             
+            <IconSymbol
                 name="viewfinder"
                 size={80}
                 color={Colors[colorScheme ?? 'light'].text} // Or .icon if preferred
@@ -189,11 +163,12 @@ export default function ScanItemsScreen() {
               <ThemedText type='default' style={{ textAlign: 'center', marginTop: 8, opacity: 0.6 }}>
                 Press the button above to start scanning
               </ThemedText>
+              
             </ThemedView>
           )}
         </ThemedView>
       )}
-    </ParallaxScrollView>
+      </ParallaxScrollView>
   );
 }
 
@@ -261,7 +236,6 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: Colors.light.cardBackground, // Ensure this is defined in your Colors.ts
     // Add shadow or border if desired
   },
   detailItem: {
