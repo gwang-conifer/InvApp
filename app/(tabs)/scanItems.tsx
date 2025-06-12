@@ -1,3 +1,4 @@
+//  scanItems.tsx
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -71,7 +72,7 @@ export default function ScanItemsScreen() {
           <CameraView
             style={styles.barcodeScannerView}
             barcodeScannerSettings={{
-              barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e'],
+              barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e'], // EXPERIMENT: Try a small value like 0.1 or 0.2
             }}
             onBarcodeScanned={(result: BarcodeScanningResult) => {
               if (!hasScanned && result.data) {
@@ -90,8 +91,7 @@ export default function ScanItemsScreen() {
               }
             }}
             facing="back" // Good to be explicit, though it's the default
-            autoFocus="on" // Good to be explicit, though it's the default
-            zoom={0.2} // EXPERIMENT: Try a small value like 0.1 or 0.2
+            zoom={1} // EXPERIMENT: Try a small value like 0.1 or 0.2
           />
           <Pressable style={styles.closeCameraButton} onPress={() => setIsCameraVisible(false)}>
             <IconSymbol name="xmark.circle.fill" size={30} color="white" />
