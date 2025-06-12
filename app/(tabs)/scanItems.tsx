@@ -5,6 +5,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
+import * as Haptics from 'expo-haptics'; // Import Haptics
 import React, { useState } from 'react';
 import { Alert, Button, Linking, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
@@ -72,25 +73,20 @@ export default function ScanItemsScreen() {
             barcodeScannerSettings={{
               barcodeTypes: ['qr', 'ean13', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e'],
             }}
-            // Replace the existing onBarcodeScanned with your new debugging version
             onBarcodeScanned={(result: BarcodeScanningResult) => {
-              console.log("--- BARCODE SCAN EVENT ---", result); // Make log more prominent
-              if (result.data) {
-                Alert.alert(
-                  "Scan Detected!",
-                  `Type: ${result.type}\nData: ${result.data.substring(0, 100)}...`, // Show some data
-                  [{ text: "OK" }]
-                );
-                // For this test, let's not immediately process or close the camera
-                // to see if multiple events fire or if the alert itself shows up.
-                // setHasScanned(true);
-                // setScannedItem({ type: result.type, data: result.data });
-                // setIsCameraVisible(false);
-                // setTimeout(() => setHasScanned(false), 2000);
+              if (!hasScanned && result.data) {
+                console.log("--- BARCODE SCANNED ---", result);
+                setHasScanned(true); // Set cooldown flag
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); // Haptic feedback
+                setScannedItem({ type: result.type, data: result.data });
+                setIsCameraVisible(false); // Close the camera
+
+                // Reset cooldown after a short delay to allow camera to close
+                // and prevent immediate re-scan if user reopens camera quickly.
+                setTimeout(() => setHasScanned(false), 2000);
               } else {
-                console.log("Scan event fired, but NO DATA in result.");
-                // You could add an Alert here too if you want to see this on the device
-                // Alert.alert("Scan Attempted", "No data found in barcode result.", [{ text: "OK" }]);
+                if (!result.data) console.log("Scan event fired, but NO DATA in result.");
+                // If hasScanned is true, it means we're in the cooldown period, so we ignore the scan.
               }
             }}
             facing="back" // Good to be explicit, though it's the default
