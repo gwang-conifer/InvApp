@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router'; // Added import for navigation
 import { Pressable, StyleSheet } from 'react-native';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -9,6 +10,7 @@ import { useColorScheme } from '@/hooks/useColorScheme'; // Added import for but
 
 export default function HomeScreen() {
   const colorScheme = useColorScheme();
+  const router = useRouter(); // Initialize router
 
   return (
     <ParallaxScrollView
@@ -27,14 +29,17 @@ export default function HomeScreen() {
 
       <ThemedView style={styles.sectionContainer}>
         <ThemedText type="subtitle">Quick Actions</ThemedText>
-        <Pressable style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}>
-          <ThemedText style={styles.buttonText}>Receive New Order</ThemedText>
+        <Pressable
+          style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
+          onPress={() => router.push('/allOrders')} // Navigate to All Orders
+        >
+          <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? Colors.light.text : '#FFFFFF' }]}>View Inventory</ThemedText>
         </Pressable>
-        <Pressable style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}>
-          <ThemedText style={styles.buttonText}>View Inventory</ThemedText>
-        </Pressable>
-        <Pressable style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}>
-          <ThemedText style={styles.buttonText}>Scan Item</ThemedText>
+        <Pressable
+          style={[styles.button, { backgroundColor: Colors[colorScheme ?? 'light'].tint }]}
+          onPress={() => router.push('/scanItems')} // Navigate to Scan Items
+        >
+          <ThemedText style={[styles.buttonText, { color: colorScheme === 'dark' ? Colors.light.text : '#FFFFFF' }]}>Scan Item</ThemedText>
         </Pressable>
       </ThemedView>
 

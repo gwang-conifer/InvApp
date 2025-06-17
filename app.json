@@ -17,7 +17,16 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.ACCESS_FINE_LOCATION", // Often needed for BLE scanning, especially on older Android versions
+        "android.permission.BLUETOOTH_SCAN",      // For Android 12+
+        "android.permission.BLUETOOTH_CONNECT"    // For Android 12+
+      ],
+      "package": "com.conifer.RecOrd" // Make sure you have a package name
+
     },
     "web": {
       "bundler": "metro",
